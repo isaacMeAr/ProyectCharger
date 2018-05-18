@@ -1,7 +1,7 @@
-int motp11 =7;
-int motp12= 6;
-int motp21= 5;
-int motp22=4;
+int motp11 =9;
+int motp12= 8;
+int motp21= 11;
+int motp22=10;
 
 void setup() {
   pinMode (motp11, OUTPUT);
@@ -13,11 +13,11 @@ void setup() {
 
 void loop() {
 
-   char inChar = (char)Serial.read();
-
 
   while(Serial.available()){
-  
+    
+    char inChar = (char)Serial.read();
+
     if (inChar == 'W') {
     digitalWrite(motp11, 1);
     digitalWrite(motp12, 0);
@@ -26,7 +26,7 @@ void loop() {
     
     }
 
-     if (inChar == 'D') {
+     if (inChar == 'A') {
     digitalWrite(motp11, 1);
     digitalWrite(motp12, 0);
     digitalWrite(motp21, 0);
@@ -34,7 +34,7 @@ void loop() {
   
     }
 
-     if (inChar == 'A') {
+     if (inChar == 'D') {
     digitalWrite(motp11, 0);
     digitalWrite(motp12, 1);
     digitalWrite(motp21, 1);

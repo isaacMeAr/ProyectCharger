@@ -14,6 +14,8 @@ namespace Charger
     [Activity(Label = "Charger", MainLauncher = true)]
     public class MainActivity : Activity
     {
+        //Brodcast para busqueda de dispositivos;
+        BCaster looker;
         //Adaptador del telefono
         private BluetoothAdapter BlueAdapter = null;
 
@@ -23,9 +25,10 @@ namespace Charger
         //Streams de lectura I/O
         private Stream outStream = null;
 
+        bool RequestEnable= false;
         //Pantalla de errores
         TextView Errores;
-
+        
         //Boton de conexión
         ToggleButton Coneccion;
 
@@ -70,7 +73,6 @@ namespace Charger
             CheckBt();
         }
 
-
         //Coneccion con el robot
         private void Coneccion_Click(object sender, ToggleButton.CheckedChangeEventArgs e)
         {
@@ -101,7 +103,7 @@ namespace Charger
                             //cerramos la conexion
                             btSocket.Close();
                             //y el programa libera el bluetooth del dispositivo el cual retoma la busqueda de dispositivos para conctarse
-                            BlueAdapter.StartDiscovery();
+                            Search();
                         }
                         catch (Exception ex)
                         {
@@ -227,17 +229,26 @@ namespace Charger
                     throw new NullReferenceException();
                 }
                 //Verificamos que este habilitado
-                if (BlueAdapter.IsEnabled)
+                if (!BlueAdapter.IsEnabled)
                 {
-
-                    Toast.MakeText(this, "Bluetooth activado",
-                        ToastLength.Short).Show();
+                    AlertDialog.Builder activacion = new AlertDialog.Builder(this);
+                    activacion.SetTitle("Bluetooth Desactivado");
+                    activacion.SetMessage("bluetooth desactivado\nDesea activar el bluetoth:");
+                    activacion.SetPositiveButton("conectar", AcceptConection);
+                    activacion.SetNegativeButton("Cancelar", CancelConection);
+                    activacion.Show();
+                    if (RequestEnable)
+                    {
+                        BlueAdapter.Enable();
+                        RequestEnable = false;
+                        Search();
+                    }
                 }
                 else
                 {
-                    Intent enableBtIntent = new Intent(BluetoothAdapter.ActionRequestEnable);
-                    //startActivityForResult(enableBtIntent, );
+                    Search();
                 }
+
 
 
             }
@@ -254,19 +265,47 @@ namespace Charger
             }
         }
 
+        private void CancelConection(object sender, DialogClickEventArgs e)
+        {
+            RequestEnable = false;
+        }
+
+        private void AcceptConection(object sender, DialogClickEventArgs e)
+        {
+            RequestEnable = true;
+        }
+
+        public void Search()
+        {
+            BlueAdapter.StartDiscovery();
+            looker = new BCaster();
+            IntentFilter serch = new IntentFilter(BluetoothDevice.ActionFound);
+            RegisterReceiver(looker,serch);
+        }
 
         public bool Connect()
         {
             //Iniciamos la conexion con el arduino
 
-            Errores.Text = "Conexion en curso...S";
-
-            //Indicamos al adaptador que ya no sea visible
+            Errores.Text = "Conexion en curso...";
 
             try
             {
+                if (looker.dNames.Contains("Charger_P11"))
+                {
+                    for (int i = 0; i < looker.dNames.Count; i++)
+                    {
+                        if (looker.dNames[i]== "Charger_P11")
+                        {
+                            address = looker.dAddress[i];
+                        }
+                    }
+
+                }
+
 
                 BluetoothDevice device = BlueAdapter.GetRemoteDevice(address);
+                //Indicamos al adaptador que ya no sea visible
                 BlueAdapter.CancelDiscovery();
                 //Inicamos el socket de comunicacion con el arduino
                 Java.Lang.Class[] clase = new Java.Lang.Class[] { Java.Lang.Integer.Type };
@@ -274,19 +313,16 @@ namespace Charger
                 //Conectamos el socket
                 btSocket.Connect();
                 Errores.Text += "\nConexion Correcta";
+                UnregisterReceiver(looker);
+
             }
             catch (Java.Lang.IllegalArgumentException)
             {
-                Errores.Text = "dispositivo no encontrado intente conectar nuevamente el dipositivo";
+                Errores.Text = "\ndispositivo no encontrado intente conectar nuevamente el dipositivo";
                 return false;
             }
-            catch (IOException e)
+            catch (IOException )
             {
-
-            }
-            catch (Exception e)
-            {
-                //en caso de generarnos error cerramos el socket
                 try
                 {
                     btSocket.Close();
@@ -297,6 +333,11 @@ namespace Charger
                 }
                 //System.Console.WriteLine("Socket Creado");
                 return false;
+            }
+            catch (Exception e)
+            {
+
+                Errores.Text += "\n"+e.Message;
             }
             return true;
         }
