@@ -17,7 +17,7 @@ namespace Charger
         //Brodcast para busqueda de dispositivos;
         BCaster looker;
         //Adaptador del telefono
-        private BluetoothAdapter BlueAdapter = null;
+        public BluetoothAdapter BlueAdapter = null;
 
         //Coneccion con el arduino
         private BluetoothSocket btSocket = null;
@@ -72,7 +72,6 @@ namespace Charger
             //Metodo de revicion de conexion bluetooth del dispositivo
             CheckBt();
         }
-
         //Coneccion con el robot
         private void Coneccion_Click(object sender, ToggleButton.CheckedChangeEventArgs e)
         {
@@ -108,7 +107,7 @@ namespace Charger
                         catch (Exception ex)
                         {
                             //si existe algun problema en el cierre de conexion  se mada el mensaje al usuario
-                            Console.WriteLine(ex.Message);
+                            Errores.Text = ex.Message;
                         }
                     }
                 }
@@ -231,31 +230,23 @@ namespace Charger
                 //Verificamos que este habilitado
                 if (!BlueAdapter.IsEnabled)
                 {
-                    AlertDialog.Builder activacion = new AlertDialog.Builder(this);
-                    activacion.SetTitle("Bluetooth Desactivado");
-                    activacion.SetMessage("bluetooth desactivado\nDesea activar el bluetoth:");
-                    activacion.SetPositiveButton("conectar", AcceptConection);
-                    activacion.SetNegativeButton("Cancelar", CancelConection);
-                    activacion.Show();
-                    if (RequestEnable)
-                    {
-                        BlueAdapter.Enable();
-                        RequestEnable = false;
-                        Search();
-                    }
+                    BlueConection();
                 }
                 else
                 {
                     Search();
                 }
 
-
-
             }
-            catch (NullReferenceException e)
+            catch (NullReferenceException)
             {
-                Toast.MakeText(this, e.Message,
-                    ToastLength.Short).Show();
+                AlertDialog.Builder activacion = new AlertDialog.Builder(this);
+                activacion.SetTitle("Bluetooth Desactivado");
+                activacion.SetMessage("Bluetooth No Existe o esta Ocupado\npor favor reinice a aplicacion e intente de nuevo");
+                activacion.SetPositiveButton("Aceptar", OkConection);
+                AlertDialog dialog = activacion.Create();
+                dialog.Show();
+                Coneccion.Enabled = false;
             }
             catch (Exception e)
             {
@@ -265,20 +256,55 @@ namespace Charger
             }
         }
 
+        private void ConectBonded()
+        {
+            List<BluetoothDevice> bonded = (List<BluetoothDevice>)BlueAdapter.BondedDevices;
+            if (bonded.Count>0)
+            {
+                for (int i = 0; i < bonded.Count; i++)
+                {
+                    if (bonded[i].Name == "Charger_P11")
+                    {
+                        address = bonded[i].Address;
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        public void BlueConection()
+        {
+            AlertDialog.Builder activacion = new AlertDialog.Builder(this);
+            activacion.SetTitle("Bluetooth Desactivado");
+            activacion.SetMessage("bluetooth desactivado\nDesea activar el bluetoth:");
+            activacion.SetPositiveButton("conectar", AcceptConection);
+            activacion.SetNegativeButton("Cancelar", CancelConection);
+            AlertDialog dialog = activacion.Create();
+            dialog.Show();
+
+        }
+
         private void CancelConection(object sender, DialogClickEventArgs e)
         {
-            RequestEnable = false;
+
         }
 
         private void AcceptConection(object sender, DialogClickEventArgs e)
         {
-            RequestEnable = true;
+            BlueAdapter.Enable();
+            Search();
+        }
+
+        private void OkConection(object sender, DialogClickEventArgs e)
+        {
+
         }
 
         public void Search()
         {
             BlueAdapter.StartDiscovery();
-            looker = new BCaster();
+            looker = new BCaster(this);
             IntentFilter serch = new IntentFilter(BluetoothDevice.ActionFound);
             RegisterReceiver(looker,serch);
         }
@@ -291,14 +317,21 @@ namespace Charger
 
             try
             {
-                if (looker.dNames.Contains("Charger_P11"))
+                ConectBonded();
+
+                if (looker.dNames.Count >0 && address == "")
                 {
-                    for (int i = 0; i < looker.dNames.Count; i++)
+                    if (looker.dNames.Contains("Charger_P11") )
                     {
-                        if (looker.dNames[i]== "Charger_P11")
+                        for (int i = 0; i < looker.dNames.Count; i++)
                         {
-                            address = looker.dAddress[i];
+                            if (looker.dNames[i]== "Charger_P11")
+                            {
+                                address = looker.dAddress[i];
+                                break;
+                            }
                         }
+
                     }
 
                 }
@@ -314,6 +347,8 @@ namespace Charger
                 btSocket.Connect();
                 Errores.Text += "\nConexion Correcta";
                 UnregisterReceiver(looker);
+                IntentFilter d = new IntentFilter(BluetoothAdapter.ActionStateChanged);
+                RegisterReceiver(looker, d);
 
             }
             catch (Java.Lang.IllegalArgumentException)
@@ -329,9 +364,9 @@ namespace Charger
                 }
                 catch (Exception)
                 {
-                    Errores.Text += "Imposible Conectar";
+                    
                 }
-                //System.Console.WriteLine("Socket Creado");
+                Errores.Text += "Imposible Conectar";
                 return false;
             }
             catch (Exception e)
@@ -366,6 +401,26 @@ namespace Charger
                 Console.WriteLine("Error al enviar" + e.Message);
             }
             outStream.Close();
+        }
+
+        public override void Finish()
+        {
+            try
+            {
+                if (btSocket.IsConnected)
+                {
+                    btSocket.Close();
+                }
+            }
+            catch (Exception)
+            {
+            }
+            if (Coneccion.Checked)
+            {
+                Coneccion.PerformClick();
+            }
+            UnregisterReceiver(looker);
+            base.Finish();  
         }
     }
 }

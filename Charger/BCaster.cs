@@ -14,6 +14,7 @@ namespace Charger
 {
     class BCaster : BroadcastReceiver
     {
+        MainActivity activity;
         public List<string> dNames;
         public List<string> dAddress;
         public override void OnReceive(Context context, Intent intent)
@@ -25,6 +26,13 @@ namespace Charger
                 BluetoothDevice device = (BluetoothDevice)intent.GetParcelableExtra(BluetoothDevice.ExtraDevice);
                 dNames.Add(device.Name);
                 dAddress.Add(device.Address);
+            }
+            if (intent.Action == BluetoothAdapter.ActionStateChanged)
+            {
+                if (!activity.BlueAdapter.IsEnabled)
+                {
+                    activity.BlueConection();
+                }
             }
         }
         public string Find(string nameDevice)
@@ -39,8 +47,9 @@ namespace Charger
             }
             return addres;
         }
-        public BCaster()
+        public BCaster(MainActivity main)
         {
+            activity = main;
             dNames = new List<string>();
             dAddress = new List<string>();
         }
