@@ -16,6 +16,7 @@ namespace Charger
     {
         //Brodcast para busqueda de dispositivos;
         BCaster looker;
+
         //Adaptador del telefono
         public BluetoothAdapter BlueAdapter = null;
 
@@ -25,7 +26,6 @@ namespace Charger
         //Streams de lectura I/O
         private Stream outStream = null;
 
-        bool RequestEnable= false;
         //Pantalla de errores
         TextView Errores;
         
@@ -39,8 +39,8 @@ namespace Charger
         Button Right;
         Button Stop;
 
-        //Direccion del arduino unico dispositivo seleccinado por default
-        private string address = "98:D3:32:31:2C:69";
+        //Direccion del dispositivo a conectar
+        private string address = "";
 
         //Id Unico de comunicacion 
         private static UUID MY_UUID = UUID.FromString("00301101-0000-1001-8000-00805F9B34FB");
@@ -51,6 +51,7 @@ namespace Charger
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
+            //obtencion de bottonesy objetos mostrados en pantalla
             Errores = FindViewById<TextView>(Resource.Id.lbErrores);
             Coneccion = FindViewById<ToggleButton>(Resource.Id.btnConector);
             Advance = FindViewById<Button>(Resource.Id.btnAdvance);
@@ -66,12 +67,13 @@ namespace Charger
             Left.Click += new EventHandler(this.Left_Click);
             Stop.Click += new EventHandler(this.Stop_Click);
 
-            //evento de coneccion en tre el dispositivo y la maquina
+            //evento de coneccion entre el celular y el dispositivo
             Coneccion.CheckedChange += new EventHandler<CompoundButton.CheckedChangeEventArgs>(this.Coneccion_Click);
 
             //Metodo de revicion de conexion bluetooth del dispositivo
             CheckBt();
         }
+
         //Coneccion con el robot
         private void Coneccion_Click(object sender, ToggleButton.CheckedChangeEventArgs e)
         {
@@ -230,10 +232,12 @@ namespace Charger
                 //Verificamos que este habilitado
                 if (!BlueAdapter.IsEnabled)
                 {
+                    //en caso de estar deshabilitado se inicia el siguiente metodo para coneccion 
                     BlueConection();
                 }
                 else
                 {
+                    //si se encuantra encendido el bluetooth se comienza a buscar dispositivos
                     Search();
                 }
 
@@ -258,7 +262,7 @@ namespace Charger
 
         private void ConectBonded()
         {
-            List<BluetoothDevice> bonded = (List<BluetoothDevice>)BlueAdapter.BondedDevices;
+            List<BluetoothDevice> bonded = new List<BluetoothDevice>(BlueAdapter.BondedDevices);
             if (bonded.Count>0)
             {
                 for (int i = 0; i < bonded.Count; i++)
@@ -287,7 +291,7 @@ namespace Charger
 
         private void CancelConection(object sender, DialogClickEventArgs e)
         {
-
+            Coneccion.Enabled = false;
         }
 
         private void AcceptConection(object sender, DialogClickEventArgs e)
@@ -319,13 +323,13 @@ namespace Charger
             {
                 ConectBonded();
 
-                if (looker.dNames.Count >0 && address == "")
+                if (looker.dNames.Count > 0 && address == "")
                 {
                     if (looker.dNames.Contains("Charger_P11") )
                     {
                         for (int i = 0; i < looker.dNames.Count; i++)
                         {
-                            if (looker.dNames[i]== "Charger_P11")
+                            if (looker.dNames[i] == "Charger_P11")
                             {
                                 address = looker.dAddress[i];
                                 break;
@@ -373,6 +377,7 @@ namespace Charger
             {
 
                 Errores.Text += "\n"+e.Message;
+                return false;
             }
             return true;
         }

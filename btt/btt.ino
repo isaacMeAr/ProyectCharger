@@ -31,6 +31,11 @@ void loop() {
     digitalWrite(motp12, 0);
     digitalWrite(motp21, 0);
     digitalWrite(motp22, 1);
+    delay(750);
+    digitalWrite(motp11, 0);
+    digitalWrite(motp12, 0);
+    digitalWrite(motp21, 0);
+    digitalWrite(motp22, 0);
   
     }
 
@@ -38,6 +43,11 @@ void loop() {
     digitalWrite(motp11, 0);
     digitalWrite(motp12, 1);
     digitalWrite(motp21, 1);
+    digitalWrite(motp22, 0);
+    delay(750);
+    digitalWrite(motp11, 0);
+    digitalWrite(motp12, 0);
+    digitalWrite(motp21, 0);
     digitalWrite(motp22, 0);
     
     }
@@ -60,10 +70,5 @@ void loop() {
   }
 }
 
-void serialEvent()
-{
- 
-   
-}
   
 

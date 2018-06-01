@@ -19,7 +19,6 @@ namespace Charger
         public List<string> dAddress;
         public override void OnReceive(Context context, Intent intent)
         {
-
             if (intent.Action== BluetoothDevice.ActionFound )
             {
 
@@ -32,6 +31,9 @@ namespace Charger
                 if (!activity.BlueAdapter.IsEnabled)
                 {
                     activity.BlueConection();
+                }
+                if (activity.BlueAdapter.IsEnabled)
+                {
                 }
             }
         }
